@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import string
+import numpy as np
 import streamlit as st
 from torch import nn
 import torch
@@ -57,13 +59,24 @@ def one_hot_encode(sequence, num_categories):
 
 def generate_name(model, start, name_length):
     generated_name = start
-    hidden = model.init_hidden(1)
-    for _ in range(name_length):
-        input = one_hot_encode([char_to_int[generated_name[-1]]], input_size).view(1, 1, -1)
-        output, hidden = model(input, hidden)
-        probabilities = torch.exp(output).detach().numpy().flatten()
-        next_char = np.random.choice(chars, p=probabilities)
-        generated_name += next_char
+    if model_type == "LSTM":
+        hidden = model.init_hidden(1)
+        for _ in range(name_length):
+            print("name =", generated_name)
+            input = one_hot_encode([char_to_int[generated_name[-1]]], config['input_size']).view(1, 1, -1)
+            output, hidden = model(input, hidden)
+            probabilities = torch.exp(output).detach().numpy().flatten()
+            next_char = np.random.choice(chars, p=probabilities)
+            generated_name += next_char
+    else: 
+        hidden = model.init_hidden()
+        for _ in range(name_length):
+            input = one_hot_encode([char_to_int[generated_name[-1]]],config['input_size'])
+            output, hidden = model(input, hidden)
+            probabilities = torch.exp(output).detach().numpy().flatten()
+            next_char = np.random.choice(chars, p=probabilities)
+            generated_name += next_char
+        
     return generated_name.capitalize()
 
 
@@ -81,12 +94,18 @@ def load_model(model_file, config, model_type):
 
 #Init some required values
 
-with open("pokemon.txt", "r") as f:
-    lines = [line.strip() for line in f.readlines()]
+allowed_chars = string.ascii_lowercase + " "
 
-text = "".join(lines).lower()
+# Load and preprocess the text data
+with open("pokemon.txt", "r") as f:
+    lines = [line.strip().lower() for line in f.readlines()]
+
+# Filter out unwanted characters
+lines = [''.join(c for c in line if c in allowed_chars) for line in lines]
+text = "".join(lines)
 chars = sorted(list(set(text)))
 char_to_int = {char: i for i, char in enumerate(chars)}
+print(char_to_int)
 
 
 
@@ -95,24 +114,26 @@ st.title("Pokémon Name Generator")
 
 model_type = st.selectbox("Model", ['RNN', 'LSTM'])
 
-config = RNN.config()
-
 # Load the saved model
-loaded_model = load_model(model_type, )
-
+model_path = f"{model_type}_pokemon.pth"
 with open(f"{model_type}_pokemon_config.json", "r") as f:
-        config = json.load(f)
+    config = json.load(f)
+
+print(config)
+
+loaded_model = load_model(model_path, config, model_type)
 
 # Input textbox and generate button
-input_letter = st.text_input("Enter the first letter of a Pokémon name:")
-input_letter = st.slider("Name length:", 3, 10)
+input_letter = st.text_input("Enter the first letters of your desired Pokemon name:")
+name_length = st.slider("Name length:", 3, 25)
 
 generate_button = st.button("Generate")
 
 # Generate and display names in a table
 if generate_button and input_letter:
+    print(config)
     num_names = 10
-    name_length = 10
-    generated_names = [generate_name(input_letter, name_length) for _ in range(num_names)]
+    st.write(name_length - )
+    generated_names = [generate_name(loaded_model, input_letter, name_length) for _ in range(num_names)]
     st.write("Generated names:")
-    st.write("\n".join(generated_names))
+    st.table(generated_names, )

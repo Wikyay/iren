@@ -95,4 +95,4 @@ def save_model(model, model_file, config_file):
     with open(config_file, "w") as f:
         json.dump(config, f)
         
-save_model(model, "RNN_pokemon.pth", "rnn_pokemon_config.json")
+save_model(model, "RNN_pokemon.pth", "RNN_pokemon_config.json")

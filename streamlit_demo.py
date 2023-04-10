@@ -133,7 +133,6 @@ generate_button = st.button("Generate")
 if generate_button and input_letter:
     print(config)
     num_names = 10
-    st.write(name_length - )
     generated_names = [generate_name(loaded_model, input_letter, name_length) for _ in range(num_names)]
     st.write("Generated names:")
     st.table(generated_names, )
